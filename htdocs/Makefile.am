@@ -1,14 +1,16 @@
 htdocsdir = $(datadir)/forked-daapd/htdocs
 
 htdocs_DATA = \
-	admin.html 
+	admin.html \
+	player.html
 
 htdocscssdir = $(datadir)/forked-daapd/htdocs/css
 
 htdocscss_DATA = \
 	css/bulma.min.css \
 	css/font-awesome.min.css \
-	css/forked-daapd.css 
+	css/forked-daapd.css \
+	css/slider.css 
 
 htdocsfontsdir = $(datadir)/forked-daapd/htdocs/fonts
 
@@ -28,5 +30,6 @@ htdocsjs_DATA = \
 	js/axios.min.js \
 	js/axios.min.map \
 	js/forked-daapd.js \
+	js/player.js \
 	js/vue.js \
 	js/vue.min.js

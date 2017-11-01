@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>forked-daapd</title>
+  <link rel="stylesheet" href="/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/css/bulma.min.css">
+  <link rel="stylesheet" href="/css/slider.css">
+</head>
+
+<body>
+
+<div id="root" v-cloak>
+
+<!--
+  ############# Hero #############
+-->
+<section class="hero is-primary is-bold is-fullheight">
+
+  <!--
+    ############# Hero-Head #############
+  -->
+  <div class="hero-head">
+    <nav class="navbar">
+      <div class="navbar-end">
+        <div class="navbar-item">
+        <div class="field is-grouped">
+          <p class="control">
+            <a class="button is-primary" v-on:click="update">
+              <span class="icon" v-show="library.updating"><i class="fa fa-refresh fa-spin"></i></span>
+              <span class="icon" v-show="!library.updating"><i class="fa fa-refresh"></i></span>
+              <span>Update library</span></a>
+          </p>
+          <p class="control">
+            <a class="button is-primary" href="/admin.html"><span class="icon"><i class="fa fa-gear"></i></span><span>Admin</span></a>
+          </p>
+        </div>
+      </div>
+      </div>
+    </nav>
+  </div>
+
+  <!--
+    ############# Hero-Body #############
+  -->
+  <div class="hero-body">
+    <div class="container has-text-centered">
+      <div class="columns">
+        <div class="column">
+          <p class="heading">NOW PLAYING</p>
+          <h1 class="title is-1">{{ now_playing.title }}</h1>
+          <h2 class="subtitle is-3">{{ now_playing.artist }}</h2>
+          <div class="buttons">
+            <a class="button is-primary is-small" v-on:click="showInfoNowPlayingDialog" v-show="now_playing.id"><span class="icon"><i class="fa fa-info"></i></span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--
+    ############# Hero-Footer #############
+  -->
+  <div class="hero-foot">
+    <div class="columns">
+      <div class="column">
+        <div class="field has-addons has-addons-centered">
+          <p class="control">
+            <a class="button is-primary is-medium" v-on:click="previous"><span class="icon"><i class="fa fa-step-backward"></i></span></a>
+          </p>
+          <p class="control" v-show="player_status.state !== 'play'">
+            <a class="button is-primary is-medium" v-on:click="play"><span class="icon"><i class="fa fa-play"></i></span></a>
+          </p>
+          <p class="control" v-show="player_status.state === 'play'">
+            <a class="button is-primary is-medium" v-on:click="pause"><span class="icon"><i class="fa fa-pause"></i></span></a>
+          </p>
+          <p class="control">
+            <a class="button is-primary is-medium" v-on:click="next"><span class="icon"><i class="fa fa-step-forward"></i></span></a>
+          </p>
+        </div>
+      </div>
+      <div class="column">
+        <div class="field has-addons has-addons-centered">
+          <p class="control">
+            <a class="button is-primary is-medium" v-on:click="repeat" v-bind:class="{ 'has-text-warning': player_status.repeat !== 'off' }">
+              <span class="icon"><i class="fa" v-bind:class="{ 'fa-repeat': player_status.repeat !== 'single', 'fa-dot-circle-o': player_status.repeat == 'single' }"></i></span></a>
+          </p>
+          <p class="control">
+            <a class="button is-primary is-medium" v-on:click="shuffle" v-bind:class="{ 'has-text-warning': player_status.shuffle }"><span class="icon"><i class="fa fa-random"></i></span></a>
+          </p>
+          <p class="control">
+            <a class="button is-primary is-medium" v-on:click="consume" v-bind:class="{ 'has-text-warning': player_status.consume }"><span class="icon"><i class="fa fa-fire"></i></span></a>
+          </p>
+          <p class="control">
+            <a class="button is-primary is-medium" v-on:click="showOutputsDialog"><span class="icon"><i class="fa fa-volume-up"></i></span></a>
+          </p>
+        </div>
+      </div>
+    </div>
+    <progress class="progress is-large is-dark" v-bind:value="player_status.item_progress_ms" v-bind:max="player_status.item_length_ms" style="border-radius: 0;"></progress>
+  </div>
+</section>
+
+<!--
+  ############# Modal outputs #############
+-->
+<div class="modal" v-bind:class="{ 'is-active': show_outputs_dialog }">
+  <div class="modal-background" v-on:click="closeOutputsDialog"></div>
+  <div class="modal-content">
+    <div class="box">
+      <p class="title is-size-5 has-text-black">Volume</p>
+
+      <div class="range-slider">
+        <input class="range-slider__range" type="range" step="1" v-model="player_status.volume" v-on:change="setVolume" v-bind:value="player_status.volume" max="100" min="0">
+      </div>
+      <hr>
+      <div v-for="output in outputs" style="margin-bottom:24px !important;">
+        <div class="field">
+          <div class="control">
+            <label class="checkbox">
+              <input type="checkbox" v-model="output.selected" v-on:change="selectOutputs"> <span class="icon"><i class="fa fa-pause"></i></span> {{ output.name }}
+            </label>
+          </div>
+        </div>
+        <div>
+        <div class="range-slider" v-show="output.selected">
+          <input class="range-slider__range" type="range" step="1" v-model="output.volume" v-on:change="setOutputVolume(output.id, output.volume)" v-bind:value="output.volume" max="100" min="0">
+        </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <button class="modal-close is-large" aria-label="close" v-on:click="closeOutputsDialog"></button>
+</div>
+
+<!--
+  ############# Modal Now Playing #############
+-->
+<div class="modal" v-bind:class="{ 'is-active': show_info_now_playing }">
+  <div class="modal-background" v-on:click="closeInfoNowPlayingDialog"></div>
+  <div class="modal-content">
+    <div class="box">
+      <div style="margin-bottom:12px;">
+        <p class="heading">Artist</p>
+        <p class="title is-size-4 is-size-6-mobile">{{ now_playing.artist }}</p>
+      </div>
+      <div style="margin-bottom:12px;">
+        <p class="heading">Title</p>
+        <p class="title is-size-4 is-size-6-mobile">{{ now_playing.title }}</p>
+      </div>
+      <div style="margin-bottom:12px;">
+        <p class="heading">Length</p>
+        <p class="title is-size-4 is-size-6-mobile">{{ now_playing.length_ms | duration }}</p>
+      </div>
+      <div style="margin-bottom:12px;">
+        <p class="heading">Album</p>
+        <p class="title is-size-4 is-size-6-mobile">{{ now_playing.album }}</p>
+      </div>
+      <div style="margin-bottom:12px;">
+        <p class="heading">Genre</p>
+        <p class="title is-size-4 is-size-6-mobile">{{ now_playing.genre }}</p>
+      </div>
+      <div style="margin-bottom:12px;">
+        <p class="heading">Year</p>
+        <p class="title is-size-4 is-size-6-mobile">{{ now_playing.year }}</p>
+      </div>
+      <div>
+        <p class="heading">Path</p>
+        <p class="title is-size-4 is-size-6-mobile">{{ now_playing.virtual_path }}</p>
+      </div>
+    </div>
+  </div>
+  <button class="modal-close is-large" aria-label="close" v-on:click="closeInfoNowPlayingDialog"></button>
+</div>
+
+</div>
+
+<script src="/js/vue.js"></script>
+<script src="/js/axios.min.js"></script>
+<script src="/js/player.js"></script>
+
+</body>
+</html>
